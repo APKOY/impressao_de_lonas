@@ -2,6 +2,9 @@
 
 Um aplicativo web estilo Kanban, leve e em tempo real, desenvolvido para gerenciar o fluxo de produção de gráficas e comunicação visual (lonas, banners, adesivos, etc.).
 
+## Para acesso
+https://apkoy.github.io/impressao_de_lonas/
+
 ## 🚀 Funcionalidades
 
 * **Quadro Kanban Visual:** Etapas claras de produção (A Fazer, Em Andamento, Acabamento, Concluído).
