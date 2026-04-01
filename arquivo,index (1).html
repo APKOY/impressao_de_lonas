@@ -1,0 +1,598 @@
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.11.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.11.1/firebase-firestore-compat.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,sans-serif;background:#1d2125;color:#b6c2cf;min-height:100vh;padding-bottom:64px}
+@media(min-width:768px){body{padding-bottom:0}}
+
+/* HEADER */
+.hdr{background:#1d2125;border-bottom:1px solid #2c333a;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
+.logo{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.logo-icon{width:28px;height:28px;background:#6c5ce7;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.back-btn{font-size:12px;color:#8c9bab;cursor:pointer;padding:6px 10px;border-radius:6px;border:none;background:transparent;display:none;align-items:center;gap:5px}
+.back-btn:hover{background:#2c333a;color:#fff}
+.notif-bell{position:relative;background:transparent;border:none;cursor:pointer;padding:6px;color:#8c9bab}
+.notif-bell:hover{color:#fff}
+.notif-bell svg{width:20px;height:20px}
+.badge{position:absolute;top:2px;right:2px;width:16px;height:16px;background:#e24b4a;border-radius:50%;font-size:9px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;display:none}
+.badge.show{display:flex}
+
+/* BOTTOM NAV (mobile) */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#161b1f;border-top:1px solid #2c333a;display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;gap:3px;border:none;background:transparent;color:#596773;font-size:10px;font-weight:500}
+.bnav-item.active{color:#6c5ce7}
+.bnav-item svg{width:20px;height:20px}
+@media(min-width:768px){.bnav{display:none}}
+
+/* TOP NAV TABS (desktop) */
+.tnav{display:none;background:#161b1f;border-bottom:1px solid #2c333a;padding:0 20px;gap:4px}
+@media(min-width:768px){.tnav{display:flex}}
+.tnav-item{padding:12px 16px;font-size:13px;font-weight:500;color:#596773;cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px}
+.tnav-item.active{color:#fff;border-bottom-color:#6c5ce7}
+.tnav-item svg{width:15px;height:15px}
+
+/* SCREENS */
+.screen{display:none;padding:16px}
+.screen.active{display:block}
+
+/* BOARDS */
+.section-title{font-size:11px;font-weight:700;color:#596773;letter-spacing:.6px;text-transform:uppercase;margin-bottom:12px}
+.boards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+@media(min-width:480px){.boards-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
+.board-card{height:90px;border-radius:10px;cursor:pointer;position:relative;overflow:hidden;transition:opacity .15s,transform .15s;border:1px solid rgba(255,255,255,.08)}
+.board-card:active{transform:scale(.97)}
+@media(min-width:768px){.board-card:hover{opacity:.85;transform:translateY(-2px)}}
+.board-card-name{position:absolute;bottom:0;left:0;right:0;padding:8px 10px;font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);background:linear-gradient(transparent,rgba(0,0,0,.4))}
+.board-card-del{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:5px;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.board-card:hover .board-card-del{display:flex}
+.board-add{height:90px;border-radius:10px;background:#22272b;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#596773;border:1.5px dashed #3a424a;transition:background .15s}
+.board-add:hover,.board-add:active{background:#2c333a;color:#b6c2cf}
+.board-add svg{width:20px;height:20px}
+
+/* BOARD VIEW */
+#screen-board{padding:12px 12px 0}
+.board-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.board-title-text{font-size:15px;font-weight:700;color:#fff}
+.board-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stat{background:#22272b;border:1px solid #2c333a;border-radius:7px;padding:5px 10px;text-align:center}
+.stat-n{font-size:14px;font-weight:700;color:#fff}
+.stat-l{font-size:9px;color:#444;margin-top:1px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#1d9e75;display:inline-block}
+.sync-dot.s{background:#ef9f27}.sync-dot.e{background:#e24b4a}
+.sync-lbl{font-size:11px;color:#555}
+.btn{background:#6c5ce7;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#7d6ef0}
+.btn:active{transform:scale(.97)}
+.progress-wrap{margin-bottom:12px}
+.progress-label{font-size:10px;color:#444;margin-bottom:4px;display:flex;justify-content:space-between}
+.progress-bg{background:#22272b;border-radius:99px;height:4px}
+.progress-bar{height:100%;border-radius:99px;background:#6c5ce7;transition:width .4s}
+.cols-wrap{display:flex;gap:10px;overflow-x:auto;padding-bottom:80px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+@media(min-width:768px){.cols-wrap{display:grid;grid-template-columns:repeat(4,1fr);overflow-x:visible;padding-bottom:20px}}
+.col{min-width:270px;scroll-snap-align:start;border-radius:12px;overflow:hidden;flex-shrink:0}
+@media(min-width:768px){.col{min-width:unset}}
+.col-head{padding:10px 12px 8px;display:flex;align-items:center;justify-content:space-between}
+.c0 .col-head{background:#1c1b24}.c1 .col-head{background:#1a1f28}.c2 .col-head{background:#1e1a14}.c3 .col-head{background:#151e1a}
+.col-body{padding:0 7px 7px;min-height:60px}
+.c0 .col-body{background:#16151e}.c1 .col-body{background:#141820}.c2 .col-body{background:#1a1710}.c3 .col-body{background:#111a16}
+.col-name{font-size:10px;font-weight:700;letter-spacing:.6px}
+.c0 .col-name{color:#a89af0}.c1 .col-name{color:#67b3f4}.c2 .col-name{color:#ef9f27}.c3 .col-name{color:#5dcaa5}
+.col-dot{width:6px;height:6px;border-radius:50%;margin-right:6px;display:inline-block}
+.d0{background:#6c5ce7}.d1{background:#378add}.d2{background:#ef9f27}.d3{background:#1d9e75}
+.cnt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+.c0 .cnt{background:#2a2540;color:#a89af0}.c1 .cnt{background:#1a2840;color:#67b3f4}.c2 .cnt{background:#2a2010;color:#ef9f27}.c3 .cnt{background:#152a20;color:#5dcaa5}
+.card{background:#22272b;border:1px solid #2c333a;border-radius:10px;padding:10px 11px;margin:7px 0 0}
+.card:active{border-color:#3a424a}
+@media(min-width:768px){.card:hover{border-color:#3a424a}}
+.card-pbar{height:3px;border-radius:99px;margin-bottom:8px}
+.prio-alta .card-pbar{background:#e24b4a}.prio-media .card-pbar{background:#ef9f27}.prio-baixa .card-pbar{background:#639922}
+.card-title{font-size:12px;font-weight:500;color:#b6c2cf;line-height:1.45;margin-bottom:8px}
+.thumb{margin-bottom:8px;border-radius:7px;overflow:hidden;background:#1a1f24;border:1px solid #2c333a;max-height:85px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.thumb img{width:100%;object-fit:cover;max-height:85px;display:block}
+.no-img{font-size:10px;color:#3a424a;padding:8px}
+.card-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.bprio{font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px}
+.prio-alta .bprio{background:#2d1515;color:#f09595}.prio-media .bprio{background:#2a1e0a;color:#fac775}.prio-baixa .bprio{background:#1a2a0f;color:#97c459}
+.btag{font-size:9px;padding:2px 6px;border-radius:99px;background:#1d2125;color:#596773;border:1px solid #2c333a}
+.av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-left:auto;flex-shrink:0}
+.card-acts{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid #2c333a}
+.ca{flex:1;font-size:10px;padding:5px 2px;border-radius:6px;border:1px solid #2c333a;background:transparent;color:#596773;cursor:pointer;text-align:center}
+.ca:hover,.ca:active{background:#282e33;color:#b6c2cf;border-color:#3a424a}
+.ca-del:hover,.ca-del:active{background:#2a1515;color:#f09595;border-color:#4a2222}
+.ca-up{color:#67b3f4}.ca-up:hover,.ca-up:active{background:#0f1f2e;color:#85b7eb;border-color:#1a3050}
+.empty{text-align:center;padding:20px 0;font-size:11px;color:#2c333a}
+
+/* TEAM */
+.team-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.member-card{background:#22272b;border:1px solid #2c333a;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.member-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:600;color:#ddd}
+.member-role{font-size:11px;color:#596773;margin-top:2px}
+.member-del{background:transparent;border:none;color:#596773;cursor:pointer;padding:4px;border-radius:5px}
+.member-del:hover{color:#f09595;background:#2a1515}
+.add-member-btn{width:100%;padding:10px;border-radius:10px;background:#22272b;border:1.5px dashed #3a424a;color:#596773;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.add-member-btn:hover{background:#2c333a;color:#b6c2cf}
+
+/* NOTIFICATIONS */
+.notif-toggle{display:flex;align-items:center;justify-content:space-between;background:#22272b;border:1px solid #2c333a;border-radius:10px;padding:14px;margin-bottom:16px}
+.notif-toggle-info{flex:1}
+.notif-toggle-title{font-size:13px;font-weight:600;color:#ddd}
+.notif-toggle-sub{font-size:11px;color:#596773;margin-top:2px}
+.toggle-switch{width:42px;height:24px;background:#3a424a;border-radius:99px;cursor:pointer;position:relative;transition:background .2s;border:none;flex-shrink:0}
+.toggle-switch.on{background:#6c5ce7}
+.toggle-knob{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .2s}
+.toggle-switch.on .toggle-knob{transform:translateX(18px)}
+.notif-list{display:flex;flex-direction:column;gap:6px}
+.notif-item{background:#22272b;border:1px solid #2c333a;border-radius:9px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.notif-text{font-size:12px;color:#b6c2cf;line-height:1.4}
+.notif-time{font-size:10px;color:#3a424a;margin-top:2px}
+.no-notifs{text-align:center;padding:30px;font-size:12px;color:#3a424a}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;align-items:flex-end;justify-content:center}
+@media(min-width:768px){.overlay{align-items:center}}
+.overlay.open{display:flex}
+.modal{background:#282e33;border:1px solid #2c333a;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:100%;max-height:90vh;overflow-y:auto}
+@media(min-width:768px){.modal{border-radius:14px;width:340px;max-height:none}}
+.modal-handle{width:36px;height:4px;background:#3a424a;border-radius:99px;margin:0 auto 16px}
+@media(min-width:768px){.modal-handle{display:none}}
+.modal h3{font-size:14px;font-weight:600;color:#fff;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;color:#555;margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase}
+.field input,.field select{width:100%;font-size:14px;padding:10px 12px;border-radius:8px;border:1px solid #2c333a;background:#1d2125;color:#ddd;outline:none}
+.field input:focus,.field select:focus{border-color:#6c5ce7}
+.color-picker{display:flex;gap:8px;flex-wrap:wrap}
+.col-opt{width:32px;height:32px;border-radius:7px;cursor:pointer;border:2px solid transparent}
+.col-opt.selected{border-color:#fff}
+.mbtns{display:flex;gap:8px;margin-top:16px}
+.m-cancel{flex:1;padding:10px;border-radius:8px;border:1px solid #2c333a;background:transparent;color:#596773;font-size:13px;cursor:pointer}
+.m-cancel:hover{background:#22272b}
+.m-add{flex:2;padding:10px;border-radius:8px;border:none;background:#6c5ce7;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.m-add:hover{background:#7d6ef0}
+.img-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:100;align-items:center;justify-content:center;cursor:pointer}
+.img-overlay.open{display:flex}
+.img-overlay img{max-width:95vw;max-height:90vh;border-radius:8px}
+input[type=file]{display:none}
+.loader{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:60px 20px}
+.spinner{width:28px;height:28px;border:2px solid #2c333a;border-top-color:#6c5ce7;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:#282e33;border:1px solid #3a424a;border-radius:8px;padding:10px 18px;font-size:12px;color:#b6c2cf;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+@media(min-width:768px){.toast{bottom:20px}}
+.toast.show{opacity:1}
+.err{color:#f09595;font-size:12px;text-align:center}
+</style></head><body>
+
+<div class="hdr">
+  <div class="logo"><div class="logo-icon">L</div><span>LonaBoard</span></div>
+  <div class="hdr-right">
+    <button class="back-btn" id="back-btn" onclick="goHome()">← Quadros</button>
+    <button class="notif-bell" onclick="goTab('notifs')" title="Notificações">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div class="badge" id="notif-badge">0</div>
+    </button>
+  </div>
+</div>
+
+<div class="tnav" id="tnav">
+  <div class="tnav-item active" id="tnav-boards" onclick="goTab('boards')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Quadros
+  </div>
+  <div class="tnav-item" id="tnav-team" onclick="goTab('team')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Equipe
+  </div>
+  <div class="tnav-item" id="tnav-notifs" onclick="goTab('notifs')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    Notificações
+  </div>
+</div>
+
+<!-- BOARDS -->
+<div class="screen active" id="screen-boards">
+  <div class="loader" id="home-loader"><div class="spinner"></div><span style="font-size:12px;color:#555">Conectando ao Firebase...</span></div>
+  <div id="home-content" style="display:none">
+    <div class="section-title">Meus Quadros</div>
+    <div class="boards-grid" id="boards-grid"></div>
+  </div>
+</div>
+
+<!-- BOARD VIEW -->
+<div id="screen-board" style="display:none;padding:12px 12px 0">
+  <div class="board-hdr">
+    <div class="board-title-text" id="board-title">–</div>
+    <div class="board-meta">
+      <div style="display:flex;gap:6px">
+        <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">Total</div></div>
+        <div class="stat"><div class="stat-n" id="s-done" style="color:#5dcaa5">0</div><div class="stat-l">Prontos</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px"><span class="sync-dot" id="sync-dot"></span><span class="sync-lbl" id="sync-lbl">–</span></div>
+      <button class="btn" onclick="openTaskModal()">+ Tarefa</button>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Progresso</span><span id="p-pct">0%</span></div>
+    <div class="progress-bg"><div class="progress-bar" id="p-bar" style="width:0%"></div></div>
+  </div>
+  <div class="cols-wrap" id="board-cols"></div>
+</div>
+
+<!-- TEAM -->
+<div class="screen" id="screen-team">
+  <div class="section-title">Membros da equipe</div>
+  <div class="team-list" id="team-list"></div>
+  <button class="add-member-btn" onclick="openMemberModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Adicionar membro
+  </button>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="screen" id="screen-notifs">
+  <div class="section-title">Notificações</div>
+  <div class="notif-toggle">
+    <div class="notif-toggle-info">
+      <div class="notif-toggle-title">Ativar notificações</div>
+      <div class="notif-toggle-sub" id="notif-sub">Receba alertas quando tarefas mudarem de status</div>
+    </div>
+    <button class="toggle-switch" id="notif-toggle" onclick="toggleNotifs()">
+      <div class="toggle-knob"></div>
+    </button>
+  </div>
+  <div class="section-title">Histórico</div>
+  <div id="notif-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="bnav-item active" id="bnav-boards" onclick="goTab('boards')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Quadros
+  </button>
+  <button class="bnav-item" id="bnav-team" onclick="goTab('team')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Equipe
+  </button>
+  <button class="bnav-item" id="bnav-notifs" onclick="goTab('notifs')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    Alertas
+  </button>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="modal-board" onclick="if(event.target===this)closeBoardModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Novo quadro</h3>
+    <div class="field"><label>Nome</label><input id="nb-title" placeholder="Ex: Produção — Semana 23"/></div>
+    <div class="field"><label>Cor</label><div class="color-picker" id="board-color-picker"></div></div>
+    <div class="mbtns"><button class="m-cancel" onclick="closeBoardModal()">Cancelar</button><button class="m-add" onclick="createBoard()">Criar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-task" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Nova tarefa</h3>
+    <div class="field"><label>Título / Cliente</label><input id="f-title" placeholder="Ex: Lona Empresa X — 3x2m"/></div>
+    <div class="field"><label>Responsável</label><select id="f-resp"></select></div>
+    <div class="field"><label>Prioridade</label>
+      <select id="f-prio"><option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option></select>
+    </div>
+    <div class="field"><label>Tag</label>
+      <select id="f-tag"><option>Lona</option><option>Banner</option><option>Adesivo</option><option>Backlight</option><option>Placa</option></select>
+    </div>
+    <div class="mbtns"><button class="m-cancel" onclick="closeTaskModal()">Cancelar</button><button class="m-add" onclick="addTask()">Adicionar</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-member" onclick="if(event.target===this)closeMemberModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Novo membro</h3>
+    <div class="field"><label>Nome</label><input id="m-name" placeholder="Ex: João Silva"/></div>
+    <div class="field"><label>Função</label>
+      <select id="m-role"><option>Impressão</option><option>Acabamento</option><option>Atendimento</option><option>Design</option><option>Entrega</option></select>
+    </div>
+    <div class="field"><label>Cor do avatar</label><div class="color-picker" id="member-color-picker"></div></div>
+    <div class="mbtns"><button class="m-cancel" onclick="closeMemberModal()">Cancelar</button><button class="m-add" onclick="addMember()">Adicionar</button></div>
+  </div>
+</div>
+
+<div class="img-overlay" id="img-overlay" onclick="this.classList.remove('open')"><img id="img-full" src="" alt=""/></div>
+<input type="file" id="file-input" accept="image/*" onchange="handleFile(event)"/>
+<div class="toast" id="toast"></div>
+
+<script>
+const BOARD_COLORS=['#3c3489','#185fa5','#0f6e56','#854f0b','#993c1d','#72243e','#444441','#a32d2d']
+const MEMBER_COLORS=['#3c3489','#085041','#712b13','#72243e','#0c447c','#854f0b','#444441','#993c1d']
+const COLS=[{cls:'c0',dot:'d0',label:'A FAZER',idx:0},{cls:'c1',dot:'d1',label:'EM ANDAMENTO',idx:1},{cls:'c2',dot:'d2',label:'ACABAMENTO',idx:2},{cls:'c3',dot:'d3',label:'CONCLUÍDO',idx:3}]
+const COL_NAMES=['A Fazer','Em Andamento','Acabamento','Concluído']
+const ini=n=>(n||'?').split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase()
+
+let db,boards=[],tasks=[],members=[],notifHistory=[],currentBoardId=null,tasksUnsub=null,uploadId=null
+let selBoardColor='#3c3489',selMemberColor='#3c3489',notifsEnabled=false,unreadCount=0
+
+// TOAST
+const toast=msg=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+
+// SYNC
+const setSync=(v,e)=>{const d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl');d.className='sync-dot'+(e?' e':v?' s':'');l.textContent=e?'Erro':v?'Salvando...':'Ao vivo'}
+
+// TABS
+function goTab(tab){
+  const tabs=['boards','team','notifs']
+  tabs.forEach(t=>{
+    const bi=document.getElementById('bnav-'+t),ti=document.getElementById('tnav-'+t)
+    if(bi)bi.className='bnav-item'+(t===tab?' active':'')
+    if(ti)ti.className='tnav-item'+(t===tab?' active':'')
+    const s=document.getElementById('screen-'+t)
+    if(s)s.className='screen'+(t===tab?' active':'')
+  })
+  document.getElementById('screen-board').style.display='none'
+  document.getElementById('back-btn').style.display='none'
+  if(tab==='notifs'){unreadCount=0;updateBadge()}
+}
+
+function openBoard(id,name){
+  currentBoardId=id
+  document.getElementById('board-title').textContent=name
+  ;['boards','team','notifs'].forEach(t=>{
+    const s=document.getElementById('screen-'+t);if(s)s.className='screen'
+    const bi=document.getElementById('bnav-'+t),ti=document.getElementById('tnav-'+t)
+    if(bi)bi.className='bnav-item'
+    if(ti)ti.className='tnav-item'
+  })
+  document.getElementById('screen-board').style.display='block'
+  document.getElementById('back-btn').style.display='flex'
+  setSync(true)
+  if(tasksUnsub){tasksUnsub();tasksUnsub=null}
+  tasksUnsub=db.collection('tasks').where('boardId','==',id).onSnapshot(snap=>{
+    tasks=snap.docs.map(d=>({id:d.id,...d.data()}))
+    setSync(false);renderBoard()
+  },()=>setSync(false,true))
+}
+
+function goHome(){
+  if(tasksUnsub){tasksUnsub();tasksUnsub=null}
+  currentBoardId=null;tasks=[]
+  document.getElementById('screen-board').style.display='none'
+  goTab('boards')
+}
+
+// FIREBASE INIT
+function initFirebase(){
+  try{
+    const cfg={apiKey:"AIzaSyCX_fgv9TRu057v0-giUreOqbcXe1Eec3I",authDomain:"statusdeprodu.firebaseapp.com",projectId:"statusdeprodu",storageBucket:"statusdeprodu.firebasestorage.app",messagingSenderId:"896038072942",appId:"1:896038072942:web:fd95b59ad036772227ac7f"}
+    if(!firebase.apps.length)firebase.initializeApp(cfg)
+    db=firebase.firestore()
+    loadBoards();loadMembers()
+  }catch(e){document.getElementById('home-loader').innerHTML=`<div class="err">Erro: ${e.message}</div>`}
+}
+
+// BOARDS
+function loadBoards(){
+  db.collection('boards').onSnapshot(snap=>{
+    boards=snap.docs.map(d=>({id:d.id,...d.data()}))
+    document.getElementById('home-loader').style.display='none'
+    document.getElementById('home-content').style.display='block'
+    renderHome()
+  },err=>{document.getElementById('home-loader').innerHTML=`<div class="err">Erro: ${err.message}</div>`})
+}
+
+function renderHome(){
+  document.getElementById('boards-grid').innerHTML=
+    boards.map(b=>`<div class="board-card" style="background:${b.color||'#3c3489'}" onclick="openBoard('${b.id}','${(b.name||'').replace(/'/g,"\\'")}')">
+      <div class="board-card-name">${b.name}</div>
+      <button class="board-card-del" onclick="event.stopPropagation();delBoard('${b.id}')">✕</button>
+    </div>`).join('')+
+    `<div class="board-add" onclick="openBoardModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Criar quadro</span></div>`
+}
+
+function initColorPicker(containerId,colors,selColor,cbName){
+  document.getElementById(containerId).innerHTML=colors.map(c=>
+    `<div class="col-opt${c===selColor?' selected':''}" style="background:${c}" onclick="${cbName}('${c}')"></div>`
+  ).join('')
+}
+function selBoardC(c){selBoardColor=c;initColorPicker('board-color-picker',BOARD_COLORS,selBoardColor,'selBoardC')}
+function selMemberC(c){selMemberColor=c;initColorPicker('member-color-picker',MEMBER_COLORS,selMemberColor,'selMemberC')}
+
+function openBoardModal(){initColorPicker('board-color-picker',BOARD_COLORS,selBoardColor,'selBoardC');document.getElementById('nb-title').value='';document.getElementById('modal-board').classList.add('open')}
+function closeBoardModal(){document.getElementById('modal-board').classList.remove('open')}
+async function createBoard(){
+  const name=document.getElementById('nb-title').value.trim();if(!name)return
+  try{await db.collection('boards').add({name,color:selBoardColor,createdAt:firebase.firestore.FieldValue.serverTimestamp()});closeBoardModal();toast('Quadro criado!')}
+  catch(e){toast('Erro: '+e.message)}
+}
+async function delBoard(id){
+  if(!confirm('Excluir quadro e todas as tarefas?'))return
+  try{
+    await db.collection('boards').doc(id).delete()
+    const s=await db.collection('tasks').where('boardId','==',id).get()
+    await Promise.all(s.docs.map(d=>d.ref.delete()))
+    toast('Excluído')
+  }catch(e){toast('Erro')}
+}
+
+// TASKS
+function renderBoard(){
+  document.getElementById('board-cols').innerHTML=COLS.map(c=>{
+    const cards=tasks.filter(t=>t.col===c.idx)
+    return`<div class="col ${c.cls}">
+      <div class="col-head"><div style="display:flex;align-items:center"><span class="col-dot ${c.dot}"></span><span class="col-name">${c.label}</span></div><span class="cnt">${cards.length}</span></div>
+      <div class="col-body">
+        ${!cards.length?'<div class="empty">Sem pedidos</div>':cards.map(t=>`
+        <div class="card prio-${t.prio||'media'}">
+          <div class="card-pbar"></div>
+          <div class="card-title">${t.title}</div>
+          ${t.img?`<div class="thumb" onclick="viewImg('${t.id}')"><img src="${t.img}"/></div>`:`<div class="thumb"><span class="no-img">Sem print</span></div>`}
+          <div class="card-meta">
+            <span class="bprio">${(t.prio||'media').toUpperCase()}</span>
+            <span class="btag">${t.tag||''}</span>
+            <div class="av" style="background:${getMemberColor(t.resp)};color:${getMemberTextColor(t.resp)}" title="${t.resp}">${ini(t.resp)}</div>
+          </div>
+          <div class="card-acts">
+            <button class="ca ca-up" onclick="trigUp('${t.id}')">+ Print</button>
+            ${t.col>0?`<button class="ca" onclick="mv('${t.id}',-1)">← Voltar</button>`:''}
+            ${t.col<3?`<button class="ca" onclick="mv('${t.id}',1)">Avançar →</button>`:''}
+            <button class="ca ca-del" onclick="rm('${t.id}')">✕</button>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`
+  }).join('')
+  const done=tasks.filter(t=>t.col===3).length,total=tasks.length,pct=total?Math.round(done/total*100):0
+  document.getElementById('s-total').textContent=total
+  document.getElementById('s-done').textContent=done
+  document.getElementById('p-pct').textContent=pct+'%'
+  document.getElementById('p-bar').style.width=pct+'%'
+}
+
+async function mv(id,dir){
+  const t=tasks.find(x=>x.id===id);if(!t)return
+  const newCol=Math.max(0,Math.min(3,t.col+dir))
+  const oldCol=t.col
+  setSync(true)
+  try{
+    await db.collection('tasks').doc(id).update({col:newCol})
+    if(newCol!==oldCol)pushNotif(t.title,t.resp,COL_NAMES[newCol])
+  }catch(e){setSync(false,true)}
+}
+async function rm(id){setSync(true);try{await db.collection('tasks').doc(id).delete()}catch(e){setSync(false,true)}}
+
+function openTaskModal(){
+  document.getElementById('f-title').value=''
+  const sel=document.getElementById('f-resp')
+  sel.innerHTML=members.length
+    ?members.map(m=>`<option value="${m.name}">${m.name} — ${m.role}</option>`).join('')
+    :'<option>Sem membros cadastrados</option>'
+  document.getElementById('modal-task').classList.add('open')
+}
+function closeTaskModal(){document.getElementById('modal-task').classList.remove('open')}
+async function addTask(){
+  const title=document.getElementById('f-title').value.trim();if(!title)return
+  setSync(true)
+  try{
+    await db.collection('tasks').add({boardId:currentBoardId,title,resp:document.getElementById('f-resp').value,prio:document.getElementById('f-prio').value,tag:document.getElementById('f-tag').value,col:0,img:null,createdAt:firebase.firestore.FieldValue.serverTimestamp()})
+    closeTaskModal();toast('Tarefa adicionada!')
+    pushNotif(title,document.getElementById('f-resp').value,'A Fazer')
+  }catch(e){setSync(false,true);toast('Erro: '+e.message)}
+}
+
+function trigUp(id){uploadId=id;document.getElementById('file-input').value='';document.getElementById('file-input').click()}
+function handleFile(e){
+  const file=e.target.files[0];if(!file)return
+  const reader=new FileReader()
+  reader.onload=ev=>{
+    const img=new Image()
+    img.onload=async()=>{
+      const canvas=document.createElement('canvas')
+      const MAX=700;let w=img.width,h=img.height
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX}
+      canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h)
+      const compressed=canvas.toDataURL('image/jpeg',.7)
+      setSync(true)
+      try{await db.collection('tasks').doc(uploadId).update({img:compressed});toast('Print anexado!')}
+      catch(e){setSync(false,true);toast('Imagem muito grande')}
+    }
+    img.src=ev.target.result
+  }
+  reader.readAsDataURL(file)
+}
+function viewImg(id){const t=tasks.find(x=>x.id===id);if(t?.img){document.getElementById('img-full').src=t.img;document.getElementById('img-overlay').classList.add('open')}}
+
+// TEAM
+function loadMembers(){
+  db.collection('members').orderBy('createdAt').onSnapshot(snap=>{
+    members=snap.docs.map(d=>({id:d.id,...d.data()}))
+    renderTeam()
+  })
+}
+function renderTeam(){
+  document.getElementById('team-list').innerHTML=members.length
+    ?members.map(m=>`<div class="member-card">
+      <div class="member-av" style="background:${m.color||'#3c3489'};color:${lighten(m.color||'#3c3489')}">${ini(m.name)}</div>
+      <div class="member-info"><div class="member-name">${m.name}</div><div class="member-role">${m.role}</div></div>
+      <button class="member-del" onclick="delMember('${m.id}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
+      </button>
+    </div>`).join('')
+    :'<div style="text-align:center;padding:20px;font-size:12px;color:#3a424a">Nenhum membro cadastrado</div>'
+}
+function openMemberModal(){initColorPicker('member-color-picker',MEMBER_COLORS,selMemberColor,'selMemberC');document.getElementById('m-name').value='';document.getElementById('modal-member').classList.add('open')}
+function closeMemberModal(){document.getElementById('modal-member').classList.remove('open')}
+async function addMember(){
+  const name=document.getElementById('m-name').value.trim();if(!name)return
+  try{await db.collection('members').add({name,role:document.getElementById('m-role').value,color:selMemberColor,createdAt:firebase.firestore.FieldValue.serverTimestamp()});closeMemberModal();toast('Membro adicionado!')}
+  catch(e){toast('Erro: '+e.message)}
+}
+async function delMember(id){try{await db.collection('members').doc(id).delete();toast('Removido')}catch(e){toast('Erro')}}
+
+function getMemberColor(name){const m=members.find(x=>x.name===name);return m?m.color||'#3c3489':'#3c3489'}
+function getMemberTextColor(name){const m=members.find(x=>x.name===name);return lighten(m?m.color||'#3c3489':'#3c3489')}
+function lighten(hex){return hex.replace(/^#/,'').match(/.{2}/g).map(c=>Math.min(255,parseInt(c,16)+140).toString(16).padStart(2,'0')).join('').replace(/^/,'#')}
+
+// NOTIFICATIONS
+function toggleNotifs(){
+  if(!notifsEnabled){
+    if(!('Notification' in window)){toast('Notificações não suportadas neste browser');return}
+    Notification.requestPermission().then(perm=>{
+      if(perm==='granted'){
+        notifsEnabled=true
+        document.getElementById('notif-toggle').classList.add('on')
+        document.getElementById('notif-sub').textContent='Notificações ativas — você será alertado nas mudanças de status'
+        toast('Notificações ativadas!')
+      }else{
+        toast('Permissão negada. Verifique as configurações do browser.')
+      }
+    })
+  }else{
+    notifsEnabled=false
+    document.getElementById('notif-toggle').classList.remove('on')
+    document.getElementById('notif-sub').textContent='Ative para receber alertas quando tarefas mudarem de status'
+    toast('Notificações desativadas')
+  }
+}
+
+function pushNotif(taskTitle,resp,newStatus){
+  const colColors={'A Fazer':'#6c5ce7','Em Andamento':'#378add','Acabamento':'#ef9f27','Concluído':'#1d9e75'}
+  const entry={text:`"${taskTitle}" movida para ${newStatus}`,sub:`Responsável: ${resp||'–'}`,color:colColors[newStatus]||'#6c5ce7',time:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+  notifHistory.unshift(entry)
+  if(notifHistory.length>30)notifHistory.pop()
+  unreadCount++
+  updateBadge()
+  renderNotifs()
+  if(notifsEnabled&&Notification.permission==='granted'){
+    try{new Notification('LonaBoard',{body:`"${taskTitle}" → ${newStatus}\nResponsável: ${resp||'–'}`,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="%236c5ce7"/><text x="12" y="17" text-anchor="middle" font-size="14" fill="white" font-weight="bold">L</text></svg>'})}catch(e){}
+  }
+}
+
+function updateBadge(){
+  const b=document.getElementById('notif-badge')
+  b.textContent=unreadCount>9?'9+':unreadCount
+  b.className='badge'+(unreadCount>0?' show':'')
+}
+
+function renderNotifs(){
+  const el=document.getElementById('notif-list')
+  el.innerHTML=notifHistory.length
+    ?notifHistory.map(n=>`<div class="notif-item">
+      <div class="notif-dot" style="background:${n.color}"></div>
+      <div><div class="notif-text">${n.text}</div><div class="notif-time">${n.sub} · ${n.time}</div></div>
+    </div>`).join('')
+    :'<div class="no-notifs">Nenhuma notificação ainda</div>'
+}
+
+window.addEventListener('load',()=>{
+  if(typeof firebase==='undefined'){document.getElementById('home-loader').innerHTML='<div class="err">Firebase não carregou. Verifique sua conexão.</div>';return}
+  initFirebase()
+  renderNotifs()
+})
+</script>
+</body></html>
