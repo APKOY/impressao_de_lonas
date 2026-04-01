@@ -1,0 +1,282 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f0f11;color:#e8e6f0;min-height:100vh;padding:20px}
+h1{font-size:17px;font-weight:600;color:#fff;letter-spacing:-0.3px}
+.sub{font-size:12px;color:#555;margin-top:2px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.stats{display:flex;gap:8px}
+.stat{background:#1a1a1f;border:1px solid #2a2a32;border-radius:10px;padding:7px 14px;text-align:center}
+.stat-n{font-size:18px;font-weight:700;color:#fff}
+.stat-l{font-size:10px;color:#555;margin-top:1px}
+.topright{display:flex;align-items:center;gap:10px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#1d9e75;display:inline-block;margin-right:5px}
+.sync-dot.syncing{background:#ef9f27}
+.sync-lbl{font-size:11px;color:#555}
+.btn-new{background:#6c5ce7;color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-new:hover{background:#7d6ef0}
+.progress-wrap{margin-bottom:18px}
+.progress-label{font-size:11px;color:#444;margin-bottom:5px;display:flex;justify-content:space-between}
+.progress-bar-bg{background:#1a1a1f;border-radius:99px;height:4px}
+.progress-bar{height:100%;border-radius:99px;background:#6c5ce7;transition:width .4s}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.col{border-radius:14px;overflow:hidden;min-width:0}
+.col-head{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between}
+.c0 .col-head{background:#1c1b24}.c1 .col-head{background:#1a1f28}.c2 .col-head{background:#1e1a14}.c3 .col-head{background:#151e1a}
+.col-body{padding:0 8px 8px;min-height:80px}
+.c0 .col-body{background:#16151e}.c1 .col-body{background:#141820}.c2 .col-body{background:#1a1710}.c3 .col-body{background:#111a16}
+.col-name{font-size:11px;font-weight:700;letter-spacing:0.6px}
+.c0 .col-name{color:#a89af0}.c1 .col-name{color:#67b3f4}.c2 .col-name{color:#ef9f27}.c3 .col-name{color:#5dcaa5}
+.col-dot{width:7px;height:7px;border-radius:50%;margin-right:7px;display:inline-block;flex-shrink:0}
+.d0{background:#6c5ce7}.d1{background:#378add}.d2{background:#ef9f27}.d3{background:#1d9e75}
+.count{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
+.c0 .count{background:#2a2540;color:#a89af0}.c1 .count{background:#1a2840;color:#67b3f4}
+.c2 .count{background:#2a2010;color:#ef9f27}.c3 .count{background:#152a20;color:#5dcaa5}
+.card{background:#1e1e28;border:1px solid #2a2a36;border-radius:11px;padding:11px 12px;margin:7px 0 0;cursor:pointer;transition:border-color .15s}
+.card:hover{border-color:#3a3a50}
+.card-prio-bar{height:3px;border-radius:99px;margin-bottom:9px}
+.prio-alta .card-prio-bar{background:#e24b4a}.prio-media .card-prio-bar{background:#ef9f27}.prio-baixa .card-prio-bar{background:#639922}
+.card-title{font-size:12px;font-weight:500;color:#ccc;line-height:1.45;margin-bottom:8px}
+.thumb-wrap{margin-bottom:8px;border-radius:8px;overflow:hidden;background:#13131a;border:1px solid #25252f;cursor:pointer;max-height:90px;display:flex;align-items:center;justify-content:center}
+.thumb-wrap img{width:100%;object-fit:cover;max-height:90px;display:block}
+.no-img{font-size:10px;color:#333;padding:10px;text-align:center}
+.card-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.badge-prio{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:0.3px}
+.prio-alta .badge-prio{background:#2d1515;color:#f09595}.prio-media .badge-prio{background:#2a1e0a;color:#fac775}.prio-baixa .badge-prio{background:#1a2a0f;color:#97c459}
+.tag{font-size:9px;padding:2px 7px;border-radius:99px;background:#22222e;color:#666;border:1px solid #2a2a38}
+.av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-left:auto;flex-shrink:0}
+.av-a{background:#3c3489;color:#cbc8f4}.av-b{background:#085041;color:#5dcaa5}.av-c{background:#712b13;color:#f0997b}.av-d{background:#72243e;color:#ed93b1}.av-e{background:#0c447c;color:#85b7eb}
+.card-actions{display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid #22222e}
+.ca-btn{flex:1;font-size:10px;padding:5px 2px;border-radius:7px;border:1px solid #2a2a38;background:transparent;color:#666;cursor:pointer;text-align:center;white-space:nowrap}
+.ca-btn:hover{background:#23232f;color:#bbb;border-color:#3a3a4a}
+.ca-del:hover{background:#2a1515;color:#f09595;border-color:#4a2222}
+.ca-upload{color:#67b3f4}.ca-upload:hover{background:#142030;color:#85b7eb;border-color:#1a3050}
+.empty{text-align:center;padding:22px 0;font-size:11px;color:#2a2a38}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#1a1a22;border:1px solid #2e2e3e;border-radius:16px;padding:22px;width:330px;max-width:95vw}
+.modal h3{font-size:14px;font-weight:600;color:#fff;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;color:#555;margin-bottom:4px;letter-spacing:0.5px;text-transform:uppercase}
+.field input,.field select{width:100%;font-size:13px;padding:8px 11px;border-radius:8px;border:1px solid #2e2e3e;background:#13131a;color:#ddd;outline:none}
+.field input:focus,.field select:focus{border-color:#6c5ce7}
+.mbtns{display:flex;gap:8px;margin-top:16px}
+.m-cancel{flex:1;padding:8px;border-radius:8px;border:1px solid #2e2e3e;background:transparent;color:#666;font-size:13px;cursor:pointer}
+.m-cancel:hover{background:#22222e;color:#ccc}
+.m-add{flex:2;padding:8px;border-radius:8px;border:none;background:#6c5ce7;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.m-add:hover{background:#7d6ef0}
+.img-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;align-items:center;justify-content:center;cursor:pointer}
+.img-overlay.open{display:flex}
+.img-overlay img{max-width:90vw;max-height:90vh;border-radius:10px}
+input[type=file]{display:none}
+.loader{font-size:11px;color:#555;text-align:center;padding:8px}
+</style></head><body>
+
+<div class="topbar">
+  <div><h1>Impressão de Lonas</h1><div class="sub">Gestão colaborativa de pedidos</div></div>
+  <div class="topright">
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">Total</div></div>
+      <div class="stat"><div class="stat-n" id="s-done" style="color:#5dcaa5">0</div><div class="stat-l">Prontos</div></div>
+    </div>
+    <div style="display:flex;align-items:center"><span class="sync-dot" id="sync-dot"></span><span class="sync-lbl" id="sync-lbl">Sincronizado</span></div>
+    <button class="btn-new" onclick="openModal()">+ Nova tarefa</button>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-label"><span>Progresso geral</span><span id="p-pct">0%</span></div>
+  <div class="progress-bar-bg"><div class="progress-bar" id="p-bar" style="width:0%"></div></div>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>Nova tarefa</h3>
+    <div class="field"><label>Título / Cliente</label><input id="f-title" placeholder="Ex: Lona Empresa X — 3x2m"/></div>
+    <div class="field"><label>Responsável</label>
+      <select id="f-resp"><option>Ana S.</option><option>Bruno M.</option><option>Carla R.</option><option>Diego L.</option><option>Eva P.</option></select>
+    </div>
+    <div class="field"><label>Prioridade</label>
+      <select id="f-prio"><option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option></select>
+    </div>
+    <div class="field"><label>Tag</label>
+      <select id="f-tag"><option>Lona</option><option>Banner</option><option>Adesivo</option><option>Backlight</option><option>Placa</option></select>
+    </div>
+    <div class="mbtns">
+      <button class="m-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="m-add" onclick="addTask()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="img-overlay" id="img-overlay" onclick="document.getElementById('img-overlay').classList.remove('open')">
+  <img id="img-full" src="" alt=""/>
+</div>
+
+<input type="file" id="file-input" accept="image/*" onchange="handleFile(event)"/>
+
+<script>
+const avMap={'Ana S.':'av-a','Bruno M.':'av-b','Carla R.':'av-c','Diego L.':'av-d','Eva P.':'av-e'};
+function ini(n){return n.split(' ').map(x=>x[0]).join('')}
+
+const COLS=[
+  {cls:'c0',dot:'d0',label:'A FAZER',idx:0},
+  {cls:'c1',dot:'d1',label:'EM ANDAMENTO',idx:1},
+  {cls:'c2',dot:'d2',label:'ACABAMENTO',idx:2},
+  {cls:'c3',dot:'d3',label:'CONCLUÍDO',idx:3},
+];
+
+let tasks=[];
+let nid=1;
+let uploadTargetId=null;
+let lastHash='';
+
+async function loadTasks(){
+  try{
+    const r=await window.storage.get('lonas_tasks',true);
+    if(r&&r.value){
+      const d=JSON.parse(r.value);
+      tasks=d.tasks||[];
+      nid=d.nid||1;
+    }
+  }catch(e){tasks=[];}
+  if(tasks.length===0){
+    tasks=[
+      {id:nid++,title:'Lona Inauguração Mercado Silva — 4x2m',resp:'Ana S.',prio:'alta',tag:'Lona',col:0,img:null},
+      {id:nid++,title:'Banner Evento Cultural 2x1m',resp:'Bruno M.',prio:'media',tag:'Banner',col:1,img:null},
+      {id:nid++,title:'Adesivo Fachada Salão Bella — 3x1m',resp:'Carla R.',prio:'baixa',tag:'Adesivo',col:2,img:null},
+      {id:nid++,title:'Backlight Shopping Praça Norte',resp:'Diego L.',prio:'alta',tag:'Backlight',col:3,img:null},
+    ];
+    await saveTasks();
+  }
+  render();
+}
+
+async function saveTasks(){
+  setSyncing(true);
+  try{
+    await window.storage.set('lonas_tasks',JSON.stringify({tasks,nid}),true);
+  }catch(e){}
+  setSyncing(false);
+}
+
+function setSyncing(v){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-lbl');
+  if(v){dot.classList.add('syncing');lbl.textContent='Salvando...';}
+  else{dot.classList.remove('syncing');lbl.textContent='Sincronizado';}
+}
+
+async function poll(){
+  try{
+    const r=await window.storage.get('lonas_tasks',true);
+    if(r&&r.value){
+      if(r.value!==lastHash){
+        lastHash=r.value;
+        const d=JSON.parse(r.value);
+        tasks=d.tasks||[];
+        nid=d.nid||1;
+        render();
+      }
+    }
+  }catch(e){}
+}
+setInterval(poll,4000);
+
+function render(){
+  const board=document.getElementById('board');
+  board.innerHTML=COLS.map(c=>{
+    const cards=tasks.filter(t=>t.col===c.idx);
+    return`<div class="col ${c.cls}">
+      <div class="col-head">
+        <div style="display:flex;align-items:center"><span class="col-dot ${c.dot}"></span><span class="col-name">${c.label}</span></div>
+        <span class="count">${cards.length}</span>
+      </div>
+      <div class="col-body">
+        ${cards.length===0?'<div class="empty">Sem pedidos</div>':cards.map(t=>`
+        <div class="card prio-${t.prio}">
+          <div class="card-prio-bar"></div>
+          <div class="card-title">${t.title}</div>
+          ${t.img
+            ?`<div class="thumb-wrap" onclick="viewImg('${t.id}')"><img src="${t.img}" alt="print"/></div>`
+            :`<div class="thumb-wrap no-img">Sem print anexado</div>`
+          }
+          <div class="card-meta">
+            <span class="badge-prio">${t.prio.toUpperCase()}</span>
+            <span class="tag">${t.tag}</span>
+            <div class="av ${avMap[t.resp]}" title="${t.resp}">${ini(t.resp)}</div>
+          </div>
+          <div class="card-actions">
+            <button class="ca-btn ca-upload" onclick="triggerUpload(${t.id})">+ Print</button>
+            ${t.col>0?`<button class="ca-btn" onclick="mv(${t.id},-1)">← Voltar</button>`:''}
+            ${t.col<3?`<button class="ca-btn" onclick="mv(${t.id},1)">Avançar →</button>`:''}
+            <button class="ca-btn ca-del" onclick="rm(${t.id})">✕</button>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  const done=tasks.filter(t=>t.col===3).length;
+  const total=tasks.length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('p-pct').textContent=pct+'%';
+  document.getElementById('p-bar').style.width=pct+'%';
+}
+
+async function mv(id,d){
+  const t=tasks.find(x=>x.id===id);
+  if(t)t.col=Math.max(0,Math.min(3,t.col+d));
+  render();await saveTasks();
+}
+async function rm(id){
+  tasks=tasks.filter(x=>x.id!==id);
+  render();await saveTasks();
+}
+function openModal(){document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+async function addTask(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title)return;
+  tasks.push({id:nid++,title,resp:document.getElementById('f-resp').value,prio:document.getElementById('f-prio').value,tag:document.getElementById('f-tag').value,col:0,img:null});
+  document.getElementById('f-title').value='';
+  closeModal();render();await saveTasks();
+}
+function triggerUpload(id){
+  uploadTargetId=id;
+  document.getElementById('file-input').value='';
+  document.getElementById('file-input').click();
+}
+function handleFile(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=async()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=900;
+      let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.75);
+      const t=tasks.find(x=>x.id===uploadTargetId);
+      if(t){t.img=compressed;render();await saveTasks();}
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function viewImg(id){
+  const t=tasks.find(x=>x.id==id);
+  if(t&&t.img){
+    document.getElementById('img-full').src=t.img;
+    document.getElementById('img-overlay').classList.add('open');
+  }
+}
+loadTasks();
+</script>
+</body></html>
